@@ -1,0 +1,30 @@
+* {
+	box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+	width: 100%;
+	min-height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	overflow-x: hidden;
+	font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+* {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+	display: none;
+}
