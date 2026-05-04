@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { ConfigProvider } from "antd";
 import ProLayout from "./Site/Prolayout";
 import Dashboard from "./Components/Dashboard";
-import About from "./Components/About";
+
 import Contact from "./Components/Contact";
 import NotFound from "./Site/NotFound";
 import Blog from "./Components/Blog";
@@ -11,9 +11,7 @@ import Login from "./Components/Login";
 import Signup from "./Components/SignUp";
 import { useSelector } from "react-redux";
 import User from "./Components/User";
-import ExploreBlogDetails from "./Components/ExploreBlogDetails";
-import AboutHome from "./Components/AboutHome";
-import ContactHome from "./Components/ContactHome";
+import ProfilePage from "./Components/ProfilePage";
 
 function App() {
   const isAuthenticated = useSelector((state) => !!state.user.token);
@@ -34,9 +32,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/user" element={<User />} />
-        <Route path="/explore/:blogId" element={<ExploreBlogDetails />} />
-        <Route path="/about" element={<AboutHome />} />
-        <Route path="/contacthome" element={<ContactHome />} />
+
         <Route
           path="/"
           element={
@@ -45,10 +41,11 @@ function App() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="dashboard/about" element={<About />} />
+          {/* <Route path="dashboard/about" element={<About />} /> */}
           <Route path="dashboard/user" element={<User />} />
           <Route path="blog" element={<Blog />} />
           <Route path="contact" element={<Contact />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
