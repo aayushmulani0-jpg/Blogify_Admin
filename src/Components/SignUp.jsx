@@ -24,7 +24,7 @@ const Signup = () => {
       setLoading(true);
       console.log("Signup details: ", { userName, email, password });
 
-      const { data } = await axiosInstance.post("/user/signup", {
+      const { data } = await axiosInstance.post("/admin/signup", {
         userName: userName,
         email: email,
         password: password,
@@ -113,7 +113,7 @@ const Signup = () => {
             />
           </Form.Item>
 
-          <div className="auth-code-head">
+          {/* <div className="auth-code-head">
             <div>
               <Text className="auth-form-label">SECURITY CODE</Text>
               <Text className="auth-code-help">
@@ -139,7 +139,7 @@ const Signup = () => {
                 className="auth-code-input"
               />
             ))}
-          </div>
+          </div> */}
 
           <Button
             type="primary"

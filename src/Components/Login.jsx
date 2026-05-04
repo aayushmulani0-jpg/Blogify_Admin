@@ -26,7 +26,7 @@ const Login = () => {
   const onLogin = async () => {
     try {
       setLoading(true);
-      const { data } = await axiosInstance.post("/user/login", {
+      const { data } = await axiosInstance.post("admin/login", {
         email: email,
         password: password,
       });

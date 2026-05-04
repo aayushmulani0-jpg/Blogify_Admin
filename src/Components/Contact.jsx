@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   Button,
@@ -9,14 +9,22 @@ import {
   Space,
   Typography,
   message,
+  Avatar,
+  Tag,
+  Empty,
+  Spin,
 } from "antd";
 import {
   CheckCircleFilled,
   DownloadOutlined,
   FilterOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
+import axiosInstance from "../Utils/axiosInstance";
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 const roleFallbacks = [
   "Lead Curator",
@@ -36,61 +44,17 @@ const avatarPalette = [
   { background: "#dff0ff", color: "#2d79c2" },
 ];
 
-const dummyContactResponses = [
-  {
-    _id: "dummy-1",
-    name: "Julianna Duarte",
-    role: "Lead Curator",
-    email: "j.duarte@agency.co",
-    message:
-      "Interested in potential partnership for the Q4 editorial campaign.",
-    createdAt: "2024-10-24T10:15:00.000Z",
-  },
-  {
-    _id: "dummy-2",
-    name: "Marcus Kinsley",
-    role: "Freelance Writer",
-    email: "m.kinsley@freelance.net",
-    message: "Pitch: The Evolution of Digital Minimalism in media products.",
-    createdAt: "2024-10-22T09:00:00.000Z",
-  },
-  {
-    _id: "dummy-3",
-    name: "Sarah Lannister",
-    role: "Ad Ops Manager",
-    email: "sarah.l@globalmedia.com",
-    message: "Inquiry regarding Q4 sponsorship options and rate card details.",
-    createdAt: "2024-10-21T14:30:00.000Z",
-  },
-  {
-    _id: "dummy-4",
-    name: "Robert Sterling",
-    role: "Reader Feedback",
-    email: "robert_99@gmail.com",
-    message:
-      "Great article on typography. I wanted to suggest a related topic.",
-    createdAt: "2024-10-19T17:45:00.000Z",
-  },
-];
-
 const toInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
-
   if (!parts.length) return "NA";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 };
 
 const formatFullDate = (value) => {
-  if (!value) {
-    return "Date unavailable";
-  }
-
+  if (!value) return "Date unavailable";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "Date unavailable";
-  }
-
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "2-digit",
@@ -104,40 +68,56 @@ const toCsvValue = (value) => {
 };
 
 const Contact = () => {
-  const [tablePagination, setTablePagination] = useState({
-    current: 1,
-    pageSize: 4,
-  });
+  const [contact, setContact] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+  const [loading, setLoading] = useState(false);
+  const [total, setTotal] = useState(0);
 
-  const displayResponses = dummyContactResponses;
+  const getAvatarColor = (index) => {
+    return avatarPalette[index % avatarPalette.length];
+  };
 
-  const totalResponses = displayResponses.length;
+  const contactData = async () => {
+    setLoading(true);
+    try {
+      const payload = {
+        page: page,
+        limit: pageSize,
+      };
+      const res = await axiosInstance.post("/admin/getAllContact", payload);
+      setContact(res.data.data || []);
+      setTotal(res.data.total || 0);
+    } catch (error) {
+      console.error("Error fetching contact data:", error);
+      message.error("Failed to fetch contact queries");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const pagedResponses = (() => {
-    const start = (tablePagination.current - 1) * tablePagination.pageSize;
-    return displayResponses.slice(start, start + tablePagination.pageSize);
-  })();
+  useEffect(() => {
+    contactData();
+  }, [page, pageSize]);
 
-  const unreadQueries = Math.min(
-    99,
-    Math.max(1, Math.ceil(displayResponses.length * 0.25)),
-  );
+  const unreadQueries = Math.min(99, Math.max(1, Math.ceil(total * 0.25)));
 
   const exportCsv = () => {
-    if (!displayResponses.length) {
+    if (!contact.length) {
       message.info("No responses to export yet.");
       return;
     }
 
     const headers = ["Name", "Role", "Contact Details", "Message", "Date"];
-    const rows = displayResponses.map((record, index) => {
+    const rows = contact.map((record, index) => {
       const name = record?.name || record?.fullName || "Anonymous";
       const role = record?.role || roleFallbacks[index % roleFallbacks.length];
-      const contact = record?.email || record?.phone || "No contact details";
+      const contactDetail =
+        record?.email || record?.phone || "No contact details";
       const messageText =
         record?.message || record?.description || "No message";
       const dateText = record?.createdAt || record?.updatedAt || "";
-      return [name, role, contact, messageText, dateText]
+      return [name, role, contactDetail, messageText, dateText]
         .map(toCsvValue)
         .join(",");
     });
@@ -153,15 +133,14 @@ const Contact = () => {
     message.success("CSV exported.");
   };
 
+  const getContactIcon = (record) => {
+    if (record?.email) return <MailOutlined />;
+    if (record?.phone) return <PhoneOutlined />;
+    return <MailOutlined />;
+  };
+
   return (
-    <div
-      style={{
-        padding: "24px 16px 28px",
-        width: "100%",
-        maxWidth: "100%",
-        color: "#171f33",
-      }}
-    >
+    <div style={{ padding: "24px 16px 28px", width: "100%", maxWidth: "100%" }}>
       <Flex justify="space-between" align="end" wrap gap={16}>
         <Space direction="vertical" size={2}>
           <Text
@@ -186,9 +165,6 @@ const Contact = () => {
         <Space size={10} wrap>
           <Button
             icon={<FilterOutlined />}
-            onClick={() =>
-              message.info("Static demo mode: filters are not enabled.")
-            }
             style={{
               minWidth: 120,
               height: 40,
@@ -219,86 +195,7 @@ const Contact = () => {
         </Space>
       </Flex>
 
-      <Card
-        style={{
-          borderRadius: 12,
-          marginTop: 18,
-          border: "1px solid #e5ebf6",
-          boxShadow: "0 8px 22px rgba(17, 26, 50, 0.04)",
-        }}
-        styles={{ body: { padding: 0 } }}
-      >
-        <div className="contact-query-head-row">
-          <Text>SENDER</Text>
-          <Text>CONTACT DETAILS</Text>
-          <Text>MESSAGE PREVIEW</Text>
-          <Text style={{ textAlign: "right" }}>DATE</Text>
-        </div>
-
-        {pagedResponses.map((record, index) => {
-          const absoluteIndex =
-            (tablePagination.current - 1) * tablePagination.pageSize + index;
-          const name = record?.name || record?.fullName || "Anonymous";
-          const role =
-            record?.role || roleFallbacks[absoluteIndex % roleFallbacks.length];
-          const contact =
-            record?.email || record?.phone || "No contact details";
-          const preview =
-            record?.message || record?.description || "No message shared.";
-          const fullDate = formatFullDate(
-            record?.createdAt || record?.updatedAt,
-          );
-          const palette = avatarPalette[absoluteIndex % avatarPalette.length];
-
-          return (
-            <div
-              key={record?._id || `${contact}-${absoluteIndex}`}
-              className="contact-query-data-row"
-            >
-              <div className="contact-query-sender-cell">
-                <div
-                  className="contact-query-avatar"
-                  style={{
-                    background: palette.background,
-                    color: palette.color,
-                  }}
-                >
-                  {toInitials(name)}
-                </div>
-                <div>
-                  <div className="contact-query-name">{name}</div>
-                  <div className="contact-query-role">{role}</div>
-                </div>
-              </div>
-
-              <div className="contact-query-contact">{contact}</div>
-
-              <div className="contact-query-message">{preview}</div>
-
-              <div className="contact-query-date">{fullDate}</div>
-            </div>
-          );
-        })}
-
-        <div className="contact-query-footer">
-          <Text className="contact-query-footer-label">
-            SHOWING {Math.min(totalResponses, tablePagination.pageSize)} OF{" "}
-            {totalResponses} QUERIES
-          </Text>
-
-          <Pagination
-            current={tablePagination.current}
-            total={totalResponses}
-            pageSize={tablePagination.pageSize}
-            showSizeChanger={false}
-            onChange={(current) =>
-              setTablePagination((prev) => ({ ...prev, current }))
-            }
-            size="small"
-          />
-        </div>
-      </Card>
-
+      {/* Keep original card layout with same colors and sizes */}
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} md={8}>
           <Card
@@ -373,151 +270,257 @@ const Contact = () => {
         </Col>
       </Row>
 
-      <style>{`
-        .contact-query-head-row,
-        .contact-query-data-row {
-          display: grid;
-          grid-template-columns: minmax(220px, 1.2fr) minmax(190px, 1.1fr) minmax(220px, 1.8fr) 120px;
-          gap: 18px;
-          align-items: center;
-          padding: 18px 24px;
+      {/* Data display section with Ant Design components */}
+      <Card
+        title={
+          <Flex
+            justify="space-between"
+            align="center"
+            style={{ width: "100%" }}
+          >
+            <Text strong style={{ fontSize: 16 }}>
+              Recent Queries
+            </Text>
+            <Text
+              type="secondary"
+              style={{ fontSize: 12, letterSpacing: 1.6, fontWeight: 700 }}
+            >
+              Showing {contact.length} of {total}
+            </Text>
+          </Flex>
         }
+        style={{
+          marginTop: 24,
+          borderRadius: 12,
+          border: "1px solid #e5ebf6",
+          boxShadow: "0 8px 22px rgba(17, 26, 50, 0.04)",
+        }}
+        loading={loading}
+      >
+        {contact.length === 0 && !loading ? (
+          <Empty description="No contact queries found" />
+        ) : (
+          <>
+            {/* Table-like header */}
+            <Row
+              style={{
+                background: "#f3f6ff",
+                padding: "18px 24px",
+                borderBottom: "1px solid #e4eaf7",
+                marginBottom: 0,
+              }}
+              gutter={16}
+            >
+              <Col xs={24} sm={6}>
+                <Text
+                  style={{
+                    color: "#7d89a6",
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: 700,
+                  }}
+                >
+                  SENDER
+                </Text>
+              </Col>
+              <Col xs={24} sm={5}>
+                <Text
+                  style={{
+                    color: "#7d89a6",
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: 700,
+                  }}
+                >
+                  CONTACT DETAILS
+                </Text>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Text
+                  style={{
+                    color: "#7d89a6",
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: 700,
+                  }}
+                >
+                  MESSAGE PREVIEW
+                </Text>
+              </Col>
+              <Col xs={24} sm={5}>
+                <Text
+                  style={{
+                    color: "#7d89a6",
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: 700,
+                    textAlign: "right",
+                    display: "block",
+                  }}
+                >
+                  DATE
+                </Text>
+              </Col>
+            </Row>
 
-        .contact-query-head-row {
-          background: #f3f6ff;
-          border-bottom: 1px solid #e4eaf7;
-        }
+            {/* Data rows */}
+            <Space direction="vertical" size={0} style={{ width: "100%" }}>
+              {contact.map((record, index) => {
+                const avatarColor = getAvatarColor(index);
+                const name = record?.name || record?.fullName || "Anonymous";
+                const role =
+                  record?.role || roleFallbacks[index % roleFallbacks.length];
+                const contactDetail =
+                  record?.email || record?.phone || "No contact details";
+                const messageText =
+                  record?.message || record?.description || "No message";
+                const dateText = formatFullDate(
+                  record?.createdAt || record?.updatedAt,
+                );
 
-        .contact-query-head-row .ant-typography {
-          color: #7d89a6;
-          font-size: 11px;
-          letter-spacing: 2px;
-          font-weight: 700;
-          margin: 0;
-        }
+                return (
+                  <Row
+                    key={record._id || index}
+                    style={{
+                      padding: "18px 24px",
+                      borderBottom: "1px solid #edf1f8",
+                      minHeight: 102,
+                      alignItems: "center",
+                    }}
+                    gutter={16}
+                  >
+                    <Col xs={24} sm={6}>
+                      <Flex align="center" gap={12}>
+                        <Avatar
+                          size={38}
+                          style={{
+                            backgroundColor: avatarColor.background,
+                            color: avatarColor.color,
+                            fontWeight: 800,
+                            fontSize: 13,
+                            letterSpacing: 0.6,
+                            borderRadius: 12,
+                            flex: "none",
+                          }}
+                        >
+                          {toInitials(name)}
+                        </Avatar>
+                        <Space direction="vertical" size={0}>
+                          <Text
+                            style={{
+                              color: "#1a243d",
+                              fontSize: 16,
+                              fontWeight: 700,
+                              lineHeight: 1.15,
+                            }}
+                          >
+                            {name}
+                          </Text>
+                          <Text
+                            style={{
+                              color: "#7f8ca8",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {role}
+                          </Text>
+                        </Space>
+                      </Flex>
+                    </Col>
 
-        .contact-query-data-row {
-          border-bottom: 1px solid #edf1f8;
-          min-height: 102px;
-        }
+                    <Col xs={24} sm={5}>
+                      <Space>
+                        {getContactIcon(record)}
+                        <Text
+                          style={{
+                            color: "#3f4c67",
+                            fontSize: 14,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {contactDetail}
+                        </Text>
+                      </Space>
+                    </Col>
 
-        .contact-query-sender-cell {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
+                    <Col xs={24} sm={8}>
+                      <Paragraph
+                        ellipsis={{ rows: 1 }}
+                        style={{
+                          margin: 0,
+                          color: "#3f4c67",
+                          fontSize: 14,
+                          fontWeight: 600,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {messageText}
+                      </Paragraph>
+                    </Col>
 
-        .contact-query-avatar {
-          width: 38px;
-          height: 38px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 800;
-          font-size: 13px;
-          letter-spacing: 0.6px;
-          flex: none;
-        }
+                    <Col xs={24} sm={5}>
+                      <Flex justify="flex-end">
+                        <Text
+                          style={{
+                            color: "#95a4c3",
+                            textAlign: "right",
+                            fontWeight: 700,
+                            fontSize: 12,
+                            lineHeight: 1.35,
+                            letterSpacing: 0.4,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {dateText}
+                        </Text>
+                      </Flex>
+                    </Col>
+                  </Row>
+                );
+              })}
+            </Space>
 
-        .contact-query-name {
-          color: #1a243d;
-          font-size: 16px;
-          line-height: 1.15;
-          font-weight: 700;
-        }
-
-        .contact-query-role {
-          color: #7f8ca8;
-          font-size: 12px;
-          line-height: 1.2;
-          margin-top: 4px;
-          font-weight: 600;
-        }
-
-        .contact-query-contact {
-          color: #3f4c67;
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .contact-query-message {
-          color: #3f4c67;
-          font-size: 14px;
-          font-weight: 600;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .contact-query-date {
-          color: #95a4c3;
-          text-align: right;
-          font-weight: 700;
-          font-size: 12px;
-          line-height: 1.35;
-          letter-spacing: 0.4px;
-          white-space: nowrap;
-        }
-
-        .contact-query-footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          padding: 16px 24px;
-        }
-
-        .contact-query-footer-label {
-          font-size: 12px;
-          letter-spacing: 1.6px;
-          font-weight: 700;
-          color: #9ba8c4;
-        }
-
-        .contact-query-footer .ant-pagination-item {
-          border: 0;
-          background: transparent;
-        }
-
-        .contact-query-footer .ant-pagination-item-active a {
-          color: #4d72dc;
-          font-weight: 700;
-        }
-
-        @media (max-width: 1100px) {
-          .contact-query-head-row,
-          .contact-query-data-row {
-            grid-template-columns: 1fr;
-            gap: 8px;
-            padding: 14px 16px;
-          }
-
-          .contact-query-head-row {
-            display: none;
-          }
-
-          .contact-query-date {
-            text-align: left;
-          }
-
-          .contact-query-name {
-            font-size: 18px;
-          }
-
-          .contact-query-role,
-          .contact-query-contact,
-          .contact-query-message,
-          .contact-query-date {
-            font-size: 14px;
-          }
-
-          .contact-query-footer {
-            flex-wrap: wrap;
-            padding: 14px 16px;
-          }
-        }
-      `}</style>
+            {/* Footer with pagination */}
+            <Flex
+              justify="space-between"
+              align="center"
+              style={{ padding: "16px 24px" }}
+              wrap="wrap"
+              gap={10}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  letterSpacing: 1.6,
+                  fontWeight: 700,
+                  color: "#9ba8c4",
+                }}
+              >
+                Showing {contact.length} of {total}
+              </Text>
+              <Pagination
+                current={page}
+                pageSize={pageSize}
+                total={total}
+                onChange={(newPage, newPageSize) => {
+                  setPage(newPage);
+                  setPageSize(newPageSize);
+                }}
+                showSizeChanger
+                pageSizeOptions={["5", "10", "20", "50"]}
+                style={{
+                  border: 0,
+                  background: "transparent",
+                }}
+              />
+            </Flex>
+          </>
+        )}
+      </Card>
     </div>
   );
 };

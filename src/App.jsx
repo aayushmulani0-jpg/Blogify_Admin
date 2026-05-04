@@ -13,7 +13,7 @@ import { useSelector } from "react-redux";
 import User from "./Components/User";
 import ExploreBlogDetails from "./Components/ExploreBlogDetails";
 import AboutHome from "./Components/AboutHome";
-// import ContactHome from "./Components/ContactHome";
+import ContactHome from "./Components/ContactHome";
 
 function App() {
   const isAuthenticated = useSelector((state) => !!state.user.token);
@@ -36,7 +36,7 @@ function App() {
         <Route path="/user" element={<User />} />
         <Route path="/explore/:blogId" element={<ExploreBlogDetails />} />
         <Route path="/about" element={<AboutHome />} />
-        {/* <Route path="/contact" element={<ContactHome />} /> */}
+        <Route path="/contacthome" element={<ContactHome />} />
         <Route
           path="/"
           element={
