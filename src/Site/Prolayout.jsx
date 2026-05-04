@@ -1,26 +1,32 @@
 import React, { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BookOutlined,
   DashboardOutlined,
   GlobalOutlined,
   InfoCircleOutlined,
+  LogoutOutlined,
   MailOutlined,
+  SettingOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
-import { Layout, Menu, ConfigProvider } from "antd";
+import {
+  Layout,
+  Menu,
+  ConfigProvider,
+  Button,
+  Typography,
+  message,
+} from "antd";
 
 const { Content, Footer, Sider } = Layout;
+const { Text } = Typography;
 
 const items = [
   {
     key: "dashboard",
     icon: <DashboardOutlined />,
     label: <Link to="/dashboard">Dashboard</Link>,
-  },
-  {
-    key: "dashboard-about",
-    icon: <InfoCircleOutlined />,
-    label: <Link to="/dashboard/about">About</Link>,
   },
   {
     key: "dashboard-contact",
@@ -37,11 +43,17 @@ const items = [
     icon: <BookOutlined />,
     label: <Link to="/blog">Blog</Link>,
   },
+  {
+    key: "profile",
+    icon: <UserOutlined />,
+    label: <Link to="/profile">Profile</Link>,
+  },
 ];
 
 const ProLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const getSelectedKey = () => {
     const path = location.pathname.substring(1);
@@ -50,7 +62,20 @@ const ProLayout = () => {
     if (path === "dashboard/contact") return "dashboard-contact";
     if (path === "dashboard/explore") return "dashboard-explore";
     if (path === "blog") return "blog";
+    if (path === "profile") return "profile";
     return "dashboard";
+  };
+
+  const handleLogout = () => {
+    // Clear user session/token
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.clear();
+    
+    message.success("Logged out successfully!");
+    
+    // Redirect to login page
+    navigate("/login");
   };
 
   return (
@@ -101,15 +126,18 @@ const ProLayout = () => {
             left: 0,
             top: 0,
             bottom: 0,
-            overflow: "auto",
+            overflow: "hidden",
             zIndex: 100,
             boxShadow: "8px 0 32px rgba(15,23,42,0.22)",
             borderRight: "1px solid rgba(148,163,184,0.16)",
             background:
               "linear-gradient(180deg, #0f172a 0%, #111827 48%, #1e293b 100%)",
+            display: "flex",
+            flexDirection: "column",
           }}
           theme="dark"
         >
+          {/* Logo Section - Fixed at Top */}
           <div
             style={{
               height: 64,
@@ -124,25 +152,67 @@ const ProLayout = () => {
               fontWeight: "bold",
               borderBottom: "1px solid rgba(148,163,184,0.15)",
               letterSpacing: 0.3,
+              flexShrink: 0,
             }}
           >
             {collapsed ? "B" : "Blogify"}
           </div>
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={[getSelectedKey()]}
-            items={items}
+
+          {/* Navigation Menu - Scrollable Middle Section */}
+          <div
             style={{
-              borderRight: 0,
-              height: "calc(100% - 64px)",
+              flex: 1,
               overflowY: "auto",
               overflowX: "hidden",
-              background: "transparent",
-              paddingTop: 8,
+              minHeight: 0,
             }}
-          />
+          >
+            <Menu
+              theme="dark"
+              mode="inline"
+              selectedKeys={[getSelectedKey()]}
+              items={items}
+              style={{
+                borderRight: 0,
+                background: "transparent",
+                paddingTop: 8,
+                height: "100%",
+              }}
+            />
+          </div>
+
+          {/* Logout Button - Fixed at Bottom */}
+          <div
+            style={{
+              padding: collapsed ? "12px 8px" : "16px",
+              borderTop: "1px solid rgba(148,163,184,0.15)",
+              background: "rgba(15, 23, 42, 0.95)",
+              backdropFilter: "blur(10px)",
+              flexShrink: 0,
+            }}
+          >
+            <Button
+              type="text"
+              danger
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+              block
+              style={{
+                color: "#ef4444",
+                height: 40,
+                borderRadius: 10,
+                fontSize: collapsed ? 16 : 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: collapsed ? "center" : "flex-start",
+                padding: collapsed ? "8px" : "8px 12px",
+              }}
+            >
+              {!collapsed && "Logout"}
+            </Button>
+          </div>
         </Sider>
+
         <Layout
           style={{
             marginLeft: collapsed ? 80 : 200,

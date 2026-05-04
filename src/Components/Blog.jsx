@@ -4,7 +4,10 @@ import {
   Card,
   Divider,
   Flex,
+  Modal,
   Pagination,
+  Space,
+  Tag,
   Typography,
   message,
 } from "antd";
@@ -33,16 +36,18 @@ const staticBlogs = [
     _id: "b-1",
     title: "The Future of Generative AI in Creative Workflows",
     content:
-      "How artificial intelligence is reshaping the way designers and developers collaborate on complex digital products.",
+      "How artificial intelligence is reshaping the way designers and developers collaborate on complex digital products. From automated design systems to intelligent code generation, AI is becoming an integral part of the creative process. Teams are now able to prototype faster, iterate more efficiently, and deliver higher quality products by leveraging machine learning algorithms that understand design patterns and user preferences.",
     authorName: "Julian Wright",
     hashTag: ["AI", "Design", "Product"],
     createdAt: "2024-10-24T10:15:00.000Z",
+    coverImage:
+      "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800",
   },
   {
     _id: "b-2",
     title: "The Resurgence of Skeuomorphism in Web Apps",
     content:
-      "Why digital interfaces are slowly returning to tactile textures and spatial depth after a decade of flat design.",
+      "Why digital interfaces are slowly returning to tactile textures and spatial depth after a decade of flat design. Modern skeuomorphism combines the best of both worlds - the clarity of flat design with the intuitive affordances of realistic textures. This hybrid approach is particularly effective in mobile applications where users benefit from familiar visual cues that guide their interactions.",
     authorName: "Priya Sharma",
     hashTag: ["UI", "Design", "Trends"],
     createdAt: "2024-10-22T09:00:00.000Z",
@@ -51,7 +56,7 @@ const staticBlogs = [
     _id: "b-3",
     title: "Remote First: Building Culture in Distributed Teams",
     content:
-      "Exploring the frameworks that keep modern teams connected and motivated across time zones.",
+      "Exploring the frameworks that keep modern teams connected and motivated across time zones. Successful remote-first companies invest heavily in asynchronous communication tools, regular virtual team-building activities, and clear documentation practices. The key is creating a culture where every team member feels equally valued regardless of their physical location.",
     authorName: "Marcus Chen",
     hashTag: ["Culture", "Remote", "Team"],
     createdAt: "2024-10-21T14:30:00.000Z",
@@ -60,7 +65,7 @@ const staticBlogs = [
     _id: "b-4",
     title: "Data-Driven Storytelling for Digital Brands",
     content:
-      "Leveraging analytics not just for conversion, but to craft narratives that resonate with human audiences.",
+      "Leveraging analytics not just for conversion, but to craft narratives that resonate with human audiences. Modern brands are discovering that data can inform creative decisions without compromising authenticity. By analyzing user behavior patterns, content engagement metrics, and demographic insights, marketers can create personalized narratives that feel both relevant and genuine.",
     authorName: "Sarah Lee",
     hashTag: ["Analytics", "Brand", "Growth"],
     createdAt: "2024-10-19T17:45:00.000Z",
@@ -69,7 +74,7 @@ const staticBlogs = [
     _id: "b-5",
     title: "The New Era of Front-end Architecture",
     content:
-      "How server components and edge strategies are changing the performance landscape of the modern web.",
+      "How server components and edge strategies are changing the performance landscape of the modern web. The shift towards server-side rendering and edge computing is revolutionizing how we think about application architecture. Developers can now deliver lightning-fast experiences by moving computation closer to users while maintaining the interactivity of client-side applications.",
     authorName: "Daniel Rivera",
     hashTag: ["Frontend", "Performance", "Architecture"],
     createdAt: "2024-10-18T12:00:00.000Z",
@@ -78,7 +83,7 @@ const staticBlogs = [
     _id: "b-6",
     title: "The Psychology of Modern Minimalism",
     content:
-      "Why we are moving toward simpler lifestyles and how that aesthetic translates into digital experiences.",
+      "Why we are moving toward simpler lifestyles and how that aesthetic translates into digital experiences. Minimalism in design isn't just about removing elements - it's about creating clarity and purpose. By reducing cognitive load, minimalist interfaces help users focus on what truly matters, leading to better engagement and satisfaction.",
     authorName: "Sienna Williams",
     hashTag: ["Psychology", "Minimalism", "Lifestyle"],
     createdAt: "2024-10-16T08:30:00.000Z",
@@ -112,6 +117,8 @@ const Blog = () => {
   const navigate = useNavigate();
   const [blogs, setBlogs] = useState(staticBlogs);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedBlog, setSelectedBlog] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(blogs.length / PAGE_SIZE));
@@ -126,7 +133,13 @@ const Blog = () => {
   };
 
   const handleOpen = (blog) => {
-    navigate(`/explore/${blog._id}`, { state: { blog } });
+    setSelectedBlog(blog);
+    setIsModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalVisible(false);
+    setSelectedBlog(null);
   };
 
   const handleFilter = () => {
@@ -177,6 +190,19 @@ const Blog = () => {
   const totalPages = Math.max(1, Math.ceil(blogs.length / PAGE_SIZE));
   const startItem = blogs.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
   const endItem = Math.min(currentPage * PAGE_SIZE, blogs.length);
+
+  const tags = useMemo(() => {
+    if (!selectedBlog) return [];
+    if (Array.isArray(selectedBlog.hashTag)) return selectedBlog.hashTag;
+    return [];
+  }, [selectedBlog]);
+
+  // Calculate avatar palette index for the selected blog
+  const getSelectedBlogPalette = () => {
+    if (!selectedBlog) return avatarPalette[0];
+    const blogIndex = blogs.findIndex((b) => b._id === selectedBlog._id);
+    return avatarPalette[blogIndex % avatarPalette.length];
+  };
 
   return (
     <div className="blog-page-shell">
@@ -306,6 +332,128 @@ const Blog = () => {
           </div>
         </Card>
       </div>
+
+      {/* Blog Preview Modal */}
+      <Modal
+        open={isModalVisible}
+        onCancel={handleCloseModal}
+        footer={null}
+        width={800}
+        centered
+        style={{ top: 20 }}
+        bodyStyle={{ padding: "32px", maxHeight: "80vh", overflowY: "auto" }}
+      >
+        {selectedBlog && (
+          <div>
+            {/* Author Info Header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginBottom: 24,
+              }}
+            >
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  fontWeight: 600,
+                  ...getSelectedBlogPalette(),
+                }}
+              >
+                {getAuthorInitials(selectedBlog.authorName)}
+              </div>
+              <div style={{ marginLeft: 12 }}>
+                <Text strong style={{ fontSize: 16, display: "block" }}>
+                  {selectedBlog.authorName || "Unknown author"}
+                </Text>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  {formatFullDate(
+                    selectedBlog.updatedAt || selectedBlog.createdAt,
+                  )}
+                </Text>
+              </div>
+            </div>
+
+            {/* Blog Content */}
+            <Space direction="vertical" size={16} style={{ width: "100%" }}>
+              {/* Cover Image (if exists) */}
+              {selectedBlog.coverImage && (
+                <img
+                  alt={selectedBlog.title}
+                  src={selectedBlog.coverImage}
+                  style={{
+                    width: "100%",
+                    maxHeight: 400,
+                    objectFit: "cover",
+                    borderRadius: 12,
+                    marginBottom: 8,
+                  }}
+                />
+              )}
+
+              <Title level={2} style={{ margin: 0 }}>
+                {selectedBlog.title || "Untitled post"}
+              </Title>
+
+              {/* Tags */}
+              {tags.length > 0 && (
+                <Space wrap size={8}>
+                  {tags.map((tag, index) => (
+                    <Tag color="blue" key={`modal-tag-${index}`}>
+                      #{String(tag || "").replace(/^#/, "")}
+                    </Tag>
+                  ))}
+                </Space>
+              )}
+
+              <Divider style={{ margin: "8px 0" }} />
+
+              {/* Full Content */}
+              <Paragraph
+                style={{
+                  fontSize: 15,
+                  lineHeight: 1.8,
+                  color: "#2c3e50",
+                  marginBottom: 24,
+                }}
+              >
+                {selectedBlog.content || "No content available."}
+              </Paragraph>
+            </Space>
+
+            {/* Action Buttons */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 12,
+                marginTop: 24,
+                paddingTop: 16,
+                borderTop: "1px solid #f0f0f0",
+              }}
+            >
+              <Button onClick={handleCloseModal}>Close</Button>
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => {
+                  deleteBlog(selectedBlog._id);
+                  handleCloseModal();
+                }}
+              >
+                Delete Post
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
