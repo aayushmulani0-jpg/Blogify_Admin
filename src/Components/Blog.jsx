@@ -15,6 +15,7 @@ import {
   FilterOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../Utils/axiosInstance";
 
 const { Title, Paragraph, Text } = Typography;
 const PAGE_SIZE = 5;
@@ -26,63 +27,6 @@ const avatarPalette = [
   { background: "#f8efcc", color: "#b8871c" },
   { background: "#ffdfe2", color: "#c55167" },
   { background: "#dff0ff", color: "#2d79c2" },
-];
-
-const staticBlogs = [
-  {
-    _id: "b-1",
-    title: "The Future of Generative AI in Creative Workflows",
-    content:
-      "How artificial intelligence is reshaping the way designers and developers collaborate on complex digital products.",
-    authorName: "Julian Wright",
-    hashTag: ["AI", "Design", "Product"],
-    createdAt: "2024-10-24T10:15:00.000Z",
-  },
-  {
-    _id: "b-2",
-    title: "The Resurgence of Skeuomorphism in Web Apps",
-    content:
-      "Why digital interfaces are slowly returning to tactile textures and spatial depth after a decade of flat design.",
-    authorName: "Priya Sharma",
-    hashTag: ["UI", "Design", "Trends"],
-    createdAt: "2024-10-22T09:00:00.000Z",
-  },
-  {
-    _id: "b-3",
-    title: "Remote First: Building Culture in Distributed Teams",
-    content:
-      "Exploring the frameworks that keep modern teams connected and motivated across time zones.",
-    authorName: "Marcus Chen",
-    hashTag: ["Culture", "Remote", "Team"],
-    createdAt: "2024-10-21T14:30:00.000Z",
-  },
-  {
-    _id: "b-4",
-    title: "Data-Driven Storytelling for Digital Brands",
-    content:
-      "Leveraging analytics not just for conversion, but to craft narratives that resonate with human audiences.",
-    authorName: "Sarah Lee",
-    hashTag: ["Analytics", "Brand", "Growth"],
-    createdAt: "2024-10-19T17:45:00.000Z",
-  },
-  {
-    _id: "b-5",
-    title: "The New Era of Front-end Architecture",
-    content:
-      "How server components and edge strategies are changing the performance landscape of the modern web.",
-    authorName: "Daniel Rivera",
-    hashTag: ["Frontend", "Performance", "Architecture"],
-    createdAt: "2024-10-18T12:00:00.000Z",
-  },
-  {
-    _id: "b-6",
-    title: "The Psychology of Modern Minimalism",
-    content:
-      "Why we are moving toward simpler lifestyles and how that aesthetic translates into digital experiences.",
-    authorName: "Sienna Williams",
-    hashTag: ["Psychology", "Minimalism", "Lifestyle"],
-    createdAt: "2024-10-16T08:30:00.000Z",
-  },
 ];
 
 const getAuthorInitials = (name = "") => {
@@ -110,8 +54,29 @@ const formatFullDate = (value) => {
 
 const Blog = () => {
   const navigate = useNavigate();
-  const [blogs, setBlogs] = useState(staticBlogs);
+  const [blogs, setBlogs] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [page,setPage] = useState(1);
+  const [pageSize,setPageSize] = useState(5);
+  const [totalBlogs,setTotalBlogs] = useState(0);
+
+   const allBlogs = async() =>{
+     try {
+      const payload = {
+        page:page,
+        limit:pageSize
+      }
+      const res = await axiosInstance.post("/admin/getAllUsersBlog",payload);
+      setBlogs(res.data.blogs);
+      setTotalBlogs(res.data.total);  
+     } catch (error) {
+        message.error("Failed to fetch blogs");
+     }
+   }
+
+    useEffect(() => {
+      allBlogs();
+    }, [page, pageSize]);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(blogs.length / PAGE_SIZE));

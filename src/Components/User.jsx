@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Button,
   Card,
@@ -21,6 +21,7 @@ import {
   UserAddOutlined,
 } from "@ant-design/icons";
 import { useLocation } from "react-router-dom";
+import axiosInstance from "../Utils/axiosInstance";
 
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -41,44 +42,41 @@ const toInitials = (name = "") => {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 };
 
-const directoryUsers = [
-  {
-    key: "1",
-    name: "Marcus Thorne",
-    role: "Editor-in-Chief",
-    email: "marcus.t@blogify.editorial",
-    createdAt: "Oct 24, 2023",
-    avatar: "https://api.dicebear.com/9.x/adventurer/svg?seed=Marcus",
-  },
-  {
-    key: "2",
-    name: "Sarah Valerius",
-    role: "Writer",
-    email: "s.valerius@blogify.com",
-    createdAt: "Oct 26, 2023",
-    avatar: "https://api.dicebear.com/9.x/adventurer/svg?seed=Sarah",
-  },
-  {
-    key: "3",
-    name: "Julian Leech",
-    role: "Moderator",
-    email: "j.leech@editorial.io",
-    createdAt: "Oct 12, 2023",
-    avatar: "https://api.dicebear.com/9.x/adventurer/svg?seed=Julian",
-  },
-];
+
 
 const Explore = () => {
   const location = useLocation();
   const isDashboardExplore = location.pathname.startsWith("/dashboard");
-  const [users, setUsers] = useState(directoryUsers);
+  const [users, setUsers] = useState([]);
   const [page, setPage] = useState(1);
-  const pageSize = 3;
+  // const pageSize = 3;
+  const [pageSize, setPageSize] = useState(5);
+  const [totalUsers, setTotalUsers] = useState(0);
 
-  const pagedUsers = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return users.slice(start, start + pageSize);
-  }, [page, users]);
+
+   const addUser = async()=>{
+  try {
+    const payload = {
+      page: page,
+      limit: pageSize
+    }
+    const res = await axiosInstance.post("/admin/getAllUser",payload);
+    setUsers(res.data.users);
+    setTotalUsers(res.data.total);
+  } catch (error) {
+      console.error("Error fetching users: ", error);
+  }
+   }
+   
+
+   useEffect(() => {
+     addUser();
+   }, [page, pageSize]);
+
+  // const pagedUsers = useMemo(() => {
+  //   const start = (page - 1) * pageSize;
+  //   return users.slice(start, start + pageSize);
+  // }, [page, users]);
 
   const deleteUser = (userKey) => {
     setUsers((prev) => prev.filter((item) => item.key !== userKey));
